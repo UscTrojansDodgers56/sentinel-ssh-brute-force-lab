@@ -1,0 +1,11 @@
+let LookbackWindow = 1h;
+let FailureThreshold = 10;
+Syslog
+| where TimeGenerated > ago(LookbackWindow)
+| where Facility in ("auth", "authpriv")
+| where SyslogMessage has "Failed password"
+| extend SourceIP = extract(@"from (\S+) port", 1, SyslogMessage)
+| where isnotempty(SourceIP)
+| summarize FailureCount = count() by SourceIP
+| where FailureCount >= FailureThreshold
+| order by FailureCount desc
